@@ -11,21 +11,24 @@ const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Hello, Crop server running");
+  res.send("Video Cut server running!");
 });
 
-app.post("/crop", (req, res) => {
+app.post("/cut", (req, res) => {
   const { videoUrl, startTime, duration } = req.body;
 
   ffmpeg(videoUrl)
+    .videoCodec("copy")
+    .noAudio()
     .setStartTime(startTime)
     .setDuration(duration)
+    .toFormat("webm")
     .output("output.webm")
     .on("end", () => res.send("Video processing finished"))
     .on("error", (err) => res.status(500).send(err.message))
     .run();
 });
 
-app.listen(8001, () => {
-  console.log("🦊 Express Server is running at http://localhost:8001");
+app.listen(3000, () => {
+  console.log("👾 Express Server is running at http://localhost:3000");
 });
