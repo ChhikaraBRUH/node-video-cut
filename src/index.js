@@ -16,6 +16,7 @@ app.get("/", (req, res) => {
 
 app.post("/cut", (req, res) => {
   const { videoUrl, startTime, duration } = req.body;
+  const outputFilePath = "output.webm";
 
   ffmpeg(videoUrl)
     .videoCodec("copy")
@@ -23,8 +24,15 @@ app.post("/cut", (req, res) => {
     .setStartTime(startTime)
     .setDuration(duration)
     .toFormat("webm")
-    .output("output.webm")
-    .on("end", () => res.send("Video processing finished"))
+    .output(outputFilePath)
+    .on("end", () => {
+      // Send the output file back to the client
+      res.download(outputFilePath, (err) => {
+        if (err) {
+          res.status(500).send(err.message);
+        }
+      });
+    })
     .on("error", (err) => res.status(500).send(err.message))
     .run();
 });
