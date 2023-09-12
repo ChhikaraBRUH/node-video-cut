@@ -11,19 +11,22 @@ const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Video Cut server running!");
+  res.send("video trimming Express server running!");
 });
 
+// This API send back the file in binary (for now)
 app.post("/trim", (req, res) => {
   const { videoUrl, startTime, duration } = req.body;
 
   res.setHeader("Content-disposition", "attachment; filename=output.webm");
   res.setHeader("Content-type", "video/webm");
 
-  ffmpeg(videoUrl)
+  const ffmpegInstance = new ffmpeg(videoUrl);
+
+  ffmpegInstance
     .toFormat("webm")
     .noAudio()
-    // .videoCodec("copy")
+    // .videoCodec("copy")  // Using "copy" here results in in-accurate processing
     .output(res, { end: true }) // Stream output to response
     .setStartTime(startTime)
     .setDuration(duration)
@@ -35,6 +38,29 @@ app.post("/trim", (req, res) => {
       res.end();
     })
     .run();
+});
+
+// This API saves the trimmed video files in the root directory (for now; only works locally since no storage permission on server)
+app.post("/multi-trim", (req, res) => {
+  const { videoUrl, steps } = req.body;
+
+  steps?.forEach(({ stepId, startTime, duration }) => {
+    const ffmpegInstance = new ffmpeg(videoUrl);
+
+    ffmpegInstance
+      .toFormat("webm")
+      .noAudio()
+      // .videoCodec("copy")  // Using "copy" here results in in-accurate processing
+      .output(`${stepId}.webm`)
+      .setStartTime(startTime)
+      .setDuration(duration)
+      .on("end", () => console.log(`${stepId} step video processed!`))
+      .on("error", (err) => {
+        res.status(500).send(err.message);
+      })
+      .run();
+  });
+  res.send("Processing Finished!");
 });
 
 app.listen(process.env.PORT || 3000, () => {
