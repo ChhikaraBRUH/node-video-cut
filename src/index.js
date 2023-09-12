@@ -44,23 +44,34 @@ app.post("/trim", (req, res) => {
 app.post("/multi-trim", (req, res) => {
   const { videoUrl, steps } = req.body;
 
-  steps?.forEach(({ stepId, startTime, duration }) => {
-    const ffmpegInstance = new ffmpeg(videoUrl);
+  try {
+    steps?.forEach(({ stepId, startTime, duration }) => {
+      const startedAt = new Date().getTime();
+      const ffmpegInstance = new ffmpeg(videoUrl);
 
-    ffmpegInstance
-      .toFormat("webm")
-      .noAudio()
-      // .videoCodec("copy")  // Using "copy" here results in in-accurate processing
-      .output(`${stepId}.webm`)
-      .setStartTime(startTime)
-      .setDuration(duration)
-      .on("end", () => console.log(`${stepId} step video processed!`))
-      .on("error", (err) => {
-        res.status(500).send(err.message);
-      })
-      .run();
-  });
-  res.send("Processing Finished!");
+      ffmpegInstance
+        .toFormat("webm")
+        .noAudio()
+        // .videoCodec("copy")  // Using "copy" here results in in-accurate processing
+        .output(`${stepId}.webm`)
+        .setStartTime(startTime)
+        .setDuration(duration)
+        .on("end", () =>
+          console.log(
+            `${stepId} step video processed!`,
+            new Date().getTime() - startedAt
+          )
+        )
+        .on("error", (err) => {
+          console.error(`Error processing ${stepId}: ${err.message}`);
+          throw err;
+        })
+        .run();
+    });
+    res.status(201).send("Video Processing finished!");
+  } catch (err) {
+    res.status(500).send("Error Occured: ", err.message);
+  }
 });
 
 app.listen(process.env.PORT || 3000, () => {
