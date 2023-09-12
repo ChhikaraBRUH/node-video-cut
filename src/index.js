@@ -14,19 +14,19 @@ app.get("/", (req, res) => {
   res.send("Video Cut server running!");
 });
 
-app.post("/cut", (req, res) => {
+app.post("/trim", (req, res) => {
   const { videoUrl, startTime, duration } = req.body;
 
   res.setHeader("Content-disposition", "attachment; filename=output.webm");
   res.setHeader("Content-type", "video/webm");
 
   ffmpeg(videoUrl)
-    .videoCodec("copy")
+    .toFormat("webm")
     .noAudio()
+    // .videoCodec("copy")
+    .output(res, { end: true }) // Stream output to response
     .setStartTime(startTime)
     .setDuration(duration)
-    .toFormat("webm")
-    .output(res, { end: true }) // Stream output to response
     .on("end", () => {
       res.end();
     })
